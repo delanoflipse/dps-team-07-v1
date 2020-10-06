@@ -23,13 +23,20 @@
     WT2003S<HardwareSerial> Mp3Player;
 #endif
 
+int lastVolume = 0;
+int lastActive = 0;
+
 void setVolume(int vol) {
+  if (lastVolume == vol) return;
   Mp3Player.volume(vol);
+  lastVolume = vol;
 }
 
-void playSong(int active) {
+void setAudio(int active) {
+  if (lastActive == active) return;
   Mp3Player.playSDSong(active ? ACTIVE_AUDIO : CALM_AUDIO);
 //  Mp3Player.pause_or_play();
+  lastActive = active ;
 }
 
 void setupAudio() {
@@ -37,6 +44,6 @@ void setupAudio() {
   Mp3Player.init(COMSerial);
   Mp3Player.playMode(SINGLE_CYCLE);
   
-  setVolume(40);
+  setVolume(0);
   Mp3Player.pause_or_play();
 }
