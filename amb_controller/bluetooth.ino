@@ -1,8 +1,10 @@
 
 #include <ArduinoBLE.h>
 
-#define BLE_SCAN_RETRIES 15
-#define RSSI_LIMIT -90
+#define BLE_SCAN_RETRIES 80
+#define RSSI_LIMIT -85
+#define OVERRIDE_BTN A6
+#define USE_OVERRIDE
 
 // device details
 String deviceBaseName = "Ambichair-iot-";
@@ -16,9 +18,10 @@ const float MP_CONST = -65;
 /* VARIABLES */
 int foundNearbyDevices = 0;
 int successfullScans = 0;
-
+boolean forceActive = 0;
+int lastOverride = 0;
 unsigned long lastBLEscan = 0;
-unsigned long BLEscanInterval = 500;
+unsigned long BLEscanInterval = 110;
 
 /* determine if the other device is like us */
 boolean isOtherDevice(String peripheralName) {
@@ -59,36 +62,48 @@ void checkPeripheral(BLEDevice peripheral) {
 
 /* get the number of nearby devices and their distance */
 void getNearbyDevices() {
+  BLE.poll();
+  
+  #ifdef USE_OVERRIDE
+  int overrideValue = digitalRead(OVERRIDE_BTN);
+  
+  if (overrideValue == HIGH && lastOverride != overrideValue) {
+    forceActive = !forceActive;
+  }
+
+  lastOverride = overrideValue;
+  #endif
+  
   // timed interval for checking nearby devices
   unsigned long timeNow = millis();
-  if (timeNow > (lastBLEscan + BLEscanInterval)) {
-    // reset counter
-    foundNearbyDevices = 0;
-
+  if (forceActive) {
+    devicesNearby = true;
+    lastBLEscan = timeNow;
+  } else if (timeNow > (lastBLEscan + BLEscanInterval)) {
+    BLE.advertise();
     // scan for devices
-    BLE.scan();
+//    BLE.scan();
+    BLE.scanForName(deviceName);
     BLEDevice nextPeripheral = BLE.available();
-
-    // check if there are devices available
-    while(nextPeripheral) {
-      checkPeripheral(nextPeripheral);
-      nextPeripheral = BLE.available();
+    if (nextPeripheral) {
+      
+      Serial.print("Log: Device ");
+      Serial.println(nextPeripheral.rssi());
     }
 
-    // set timing
-    lastBLEscan = timeNow;
-
-    if (foundNearbyDevices > 0) {
+    if (nextPeripheral && nextPeripheral.rssi() > RSSI_LIMIT) {
       successfullScans = BLE_SCAN_RETRIES;
     } else {
       successfullScans = max(0, successfullScans - 1);
     }
 
+    // set timing
+    lastBLEscan = timeNow;
     devicesNearby = successfullScans > 0;
     
-//    Serial.print("scan: ");
-//    Serial.print(successfullScans);
-//    Serial.print("\n");
+    Serial.print("scan: ");
+    Serial.print(successfullScans);
+    Serial.print("\n");
   }
 }
 
@@ -110,4 +125,8 @@ void setupBluetooth() {
   BLE.setDeviceName(deviceName.c_str());
   BLE.setLocalName(deviceName.c_str());
   BLE.advertise();
+
+  #ifdef USE_OVERRIDE
+  pinMode(OVERRIDE_BTN, INPUT);
+  #endif
 }

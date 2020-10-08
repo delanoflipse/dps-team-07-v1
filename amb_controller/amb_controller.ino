@@ -8,6 +8,7 @@
 
 /* CONSTANTS */
 #define SENSOR_LIMIT 100
+#define SENSOR_CONNECTED
 
 /* VARIABLES */
 // state variables
@@ -28,9 +29,11 @@ void setup() {
 
   setupBluetooth();
   setupLights();
+  #ifdef SENSOR_CONNECTED
   setupAudio();
   setupPickup();
   setupSitDetector();
+  #endif
 
   // log setup data
   Serial.println("Log: Board setup");
@@ -59,6 +62,7 @@ void determineStateAndVolume() {
       // wake up if user is sitting
       if (!pickedUp) {
         ambState = 0;
+        currentVolume = 0;
       }
     break;
     
@@ -92,14 +96,20 @@ void loop() {
 
   // determine colors, state and volume based on sensor values
   determineStateAndVolume();
+  
+  #ifdef SENSOR_CONNECTED
   determinePickedUp();
   determineSitOn();
+  #endif
   loopAnimations();
 
   // output
   setLEDs(devicesNearby, ambState);
+  
+  #ifdef SENSOR_CONNECTED
   setVolume(currentVolume);
-  setAudio(devicesNearby);
+  setAudio(devicesNearby, ambState);
+  #endif
   
 //  Serial.print((int) devicesNearby);
 //  Serial.print('\t');

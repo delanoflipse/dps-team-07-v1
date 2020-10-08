@@ -9,7 +9,6 @@
 
 //#define USE_ACCELEROMETER
 
-
 const int numReadings = 10;
 float readingsZ[numReadings];
 
@@ -153,9 +152,9 @@ void determinePickedUp() {
     pickedUp = false;
   }
     
-  Serial.print(runningAverageZ);
-  Serial.print("\t");
-  Serial.print((int) pickedUp);
-  Serial.println();
+//  Serial.print(runningAverageZ);
+//  Serial.print("\t");
+//  Serial.print((int) pickedUp);
+//  Serial.println();
 }
 #endif

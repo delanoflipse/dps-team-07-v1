@@ -2,6 +2,7 @@
 
 #define CALM_AUDIO "calm.mp3"
 #define ACTIVE_AUDIO "active.mp3"
+#define PICKUP_AUDIO "pickup.mp3"
 
 #ifdef __AVR__
     #include <SoftwareSerial.h>
@@ -24,7 +25,7 @@
 #endif
 
 int lastVolume = 0;
-int lastActive = 0;
+int lastAudio = 0;
 
 void setVolume(int vol) {
   if (lastVolume == vol) return;
@@ -32,11 +33,26 @@ void setVolume(int vol) {
   lastVolume = vol;
 }
 
-void setAudio(int active) {
-  if (lastActive == active) return;
-  Mp3Player.playSDSong(active ? ACTIVE_AUDIO : CALM_AUDIO);
+void setAudio(int active, int state) {
+  int newAudio = state == 1
+    ? 1
+    : active ? 2 : 3;
+  
+  if (lastAudio == newAudio) return;
+  switch (newAudio) {
+    case 1:
+    Mp3Player.playSDSong(PICKUP_AUDIO);
+    break;
+    case 2:
+    Mp3Player.playSDSong(ACTIVE_AUDIO);
+    break;
+    case 3:
+    Mp3Player.playSDSong(CALM_AUDIO);
+    break;
+  }
+
 //  Mp3Player.pause_or_play();
-  lastActive = active ;
+  lastAudio = newAudio;
 }
 
 void setupAudio() {
