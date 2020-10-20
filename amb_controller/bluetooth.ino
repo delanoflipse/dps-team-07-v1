@@ -33,7 +33,7 @@ unsigned long deviceLastReads [N_DEVICES];
 void BLEDiscoveredEvent(BLEDevice device) {
   String deviceName = device.hasLocalName() ? device.localName() : "";
 
-  if (deviceName.startsWith(deviceBaseName)) {
+  if (deviceName.startsWith(deviceBaseName) || deviceName.startsWith("Delano")) {
     int deviceRSSI = device.rssi();
     
     unsigned long timeNow = millis();
