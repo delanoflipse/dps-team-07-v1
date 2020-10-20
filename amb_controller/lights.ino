@@ -5,25 +5,30 @@
 /* CONSTANTS */
 
 #define NUM_LEDS 3
+ChainableLED leds(7, 8, NUM_LEDS);
 
 /* VARIABLES */
 
 // idle fade variables
-#define ANIM_1_STATES 2
+#define ANIM_1_STATES 4
 int animation1[ANIM_1_STATES][3] = {
   // start, end, duration
   {0, 500, 2250},
+  {500, 0, 100},
+  {0, 500, 100},
   {500, 0, 2305},
 };
 
 // idle fade variables
-#define ANIM_2_STATES 5
+#define ANIM_2_STATES 7
 int animation2[ANIM_2_STATES][3] = {
   // start, end, duration
   {0, 500, 2505},
   {500, 500, 2528},
   {500, 300, 2860},
   {300, 500, 2420},
+  {500, 0, 100},
+  {0, 500, 100},
   {500, 0, 2555},
 };
 
@@ -33,16 +38,24 @@ int animation3[ANIM_2_STATES][3] = {
   // start, end, duration
   {0, 500, 2500},
   {500, 500, 2500},
+  {500, 0, 100},
+  {0, 500, 100},
   {500, 0, 2500},
+};
+// idle fade variables
+#define ANIM_ERR_STATES 5
+int animation_error[ANIM_ERR_STATES][3] = {
+  // start, end, duration
+  {0, 500, 500},
+  {500, 0, 100},
 };
 
 int animation1_values[] = {0, 0, 0};
 int animation2_values[] = {0, 0, 0};
 int animation3_values[] = {0, 0, 0};
+int animation_error_values[] = {0, 0, 0};
 
 unsigned long lastAnimationUpdate = 0;
-
-ChainableLED leds(7, 8, NUM_LEDS);
 
 void setupLights() {
   // intial timing
@@ -82,43 +95,91 @@ void loopAnimations() {
   progressAnimation(animation1, ANIM_1_STATES, animation1_values, delta);
   progressAnimation(animation2, ANIM_2_STATES, animation2_values, delta);
   progressAnimation(animation3, ANIM_3_STATES, animation3_values, delta);
+  progressAnimation(animation_error, ANIM_ERR_STATES, animation_error_values, delta);
+}
+
+float getHue(float hue) {
+  return hue / 360.0;
 }
 
 /* calculate a new color for the LED's */
-void setLEDs(boolean devicesNearby, int state) {
+void setLEDs(boolean devicesNearby, Orientation orientation, MachineState state) {
   // active = red/yellow
   // dorment = greenish
-  float hue1 = devicesNearby ? 0 : 125.0 / 360.0;
-  float hue2 = devicesNearby ? 15.0 / 360.0 : 120.0 / 360.0;
-  float hue3 = devicesNearby ? 30.0 / 360.0 : 115.0 / 360.0;
-
-  float saturation = 1.0;
+//  float hue1 = devicesNearby ? 0 : 125.0 / 360.0;
+//  float hue2 = devicesNearby ? 15.0 / 360.0 : 120.0 / 360.0;
+//  float hue3 = devicesNearby ? 30.0 / 360.0 : 115.0 / 360.0;
+  float hue1 = 0;
+  float hue2 = 0;
+  float hue3 = 0;
 
   float light1 = 0;
   float light2 = 0;
   float light3 = 0;
 
+  float saturation1 = 1.0;
+  float saturation2 = 1.0;
+  float saturation3 = 1.0;
+
+  switch(orientation) {
+    case up:
+    // none
+    saturation1 = 0.1;
+    saturation2 = 0.2;
+    saturation3 = 0.1;
+    hue1 = getHue(190.0);
+    hue2 = getHue(206.0);
+    hue3 = getHue(215.0);
+    break;
+    
+    case down:
+    // rain
+    hue1 = getHue(190.0);
+    hue2 = getHue(206.0);
+    hue3 = getHue(215.0);
+    break;
+    
+    case right:
+    // nature
+    hue1 = getHue(78.0);
+    hue2 = getHue(96.0);
+    hue3 = getHue(115.0);
+    break;
+    
+    case left:
+    // campfire
+    hue1 = getHue(0.0);
+    hue2 = getHue(15.0);
+    hue3 = getHue(30.0);
+    break;
+
+    default:
+    break;
+  }
   
-  switch (state) {
-    // dorment
-    case 0:
-      light1 = animation1_values[0] / 1024.0;
-      light2 = animation2_values[0] / 1024.0;
-      light3 = animation3_values[0] / 1024.0;
+  switch(state) {
+    case siton:
+    case dorment:
+    
+    // keep orientation color
+    light1 = animation1_values[0] / 1024.0;
+    light2 = animation2_values[0] / 1024.0;
+    light3 = animation3_values[0] / 1024.0;
+    break;
+
+    case error:
+      saturation1 = 1.0;
+      saturation2 = 1.0;
+      saturation3 = 1.0;
+      hue1 = getHue(0.0);
+      hue2 = getHue(0.0);
+      hue3 = getHue(0.0);
+      light1 = animation_error_values[0] / 1024.0;
+      light2 = animation_error_values[0] / 1024.0;
+      light3 = animation_error_values[0] / 1024.0;
     break;
     
-    case 1:
-      hue1 = 285.0 / 360.0;
-      hue2 = 270.0 / 360.0;
-      hue3 = 255.0 / 360.0;
-      light1 = animation1_values[0] / 1024.0;
-      light2 = animation2_values[0] / 1024.0;
-      light3 = animation3_values[0] / 1024.0;
-    // picked up
-    break;
-    
-    // sit on
-    case 2:
+    case moving:
       light1 = animation1_values[0] / 1024.0;
       light2 = animation2_values[0] / 1024.0;
       light3 = animation3_values[0] / 1024.0;
@@ -132,7 +193,7 @@ void setLEDs(boolean devicesNearby, int state) {
   // active - based on music samples
   // passive - based on fade loop
   
-  leds.setColorHSB(0, hue1, saturation, light1);
-  leds.setColorHSB(1, hue2, saturation, light2);
-  leds.setColorHSB(2, hue3, saturation, light3);
+  leds.setColorHSB(0, hue1, saturation1, light1);
+  leds.setColorHSB(1, hue2, saturation2, light2);
+  leds.setColorHSB(2, hue3, saturation3, light3);
 }

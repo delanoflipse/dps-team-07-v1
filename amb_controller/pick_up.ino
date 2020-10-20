@@ -12,23 +12,6 @@
 const int numReadings = 10;
 float readingsZ[numReadings];
 
-void createEmptyArray(float arr[], const int len) {
-  for (int i = 0; i < len; i++) {
-    arr[i] = 0.0;
-  }
-}
-
-float runningTotal(float arr[], const int len, float newValue) {
-  float total = newValue;
-  for (int i = 1; i < len; i++) {
-    total += arr[i];
-    arr[i-1] = arr[i];
-  }
-
-  arr[len - 1] = newValue;
-  return total / len;
-}
-
 #ifdef USE_ACCELEROMETER
 #include <Arduino_LSM6DS3.h>
 
@@ -47,7 +30,7 @@ void setupPickup() {
     while (1);
   }
  
-  createEmptyArray(readingsZ, numReadings);
+  fillArray(readingsZ, numReadings, 0.0f);
 }
 
 // the loop function runs over and over again forever
@@ -57,8 +40,7 @@ void determinePickedUp() {
   if (IMU.accelerationAvailable()) {
     IMU.readAcceleration(x, y, z);
     z -= Z_OFFSET;
-    float runningAverageZ = runningTotal(readingsZ, numReadings, z) - initialZ;
-
+    float runningAverageZ = runningAverage(readingsZ, numReadings, z) - initialZ;
 
     // calibrate
     if (calibrationReadingsLeft > 0) {
@@ -137,12 +119,12 @@ void determinePickedUp() {
 void setupPickup() {  
   // setup pins
   pinMode(IR_SENSOR_PIN, INPUT);
-  createEmptyArray(readingsZ, numReadings);
+  fillArray(readingsZ, numReadings, 0.0f);
 }
 
 void determinePickedUp() {
   int sensor = analogRead(IR_SENSOR_PIN);
-  float runningAverageZ = runningTotal(readingsZ, numReadings, sensor);
+  float runningAverageZ = runningAverage(readingsZ, numReadings, sensor);
 
   if (!pickedUp && runningAverageZ < IR_SENSOR_LOWER_LIMIT) {
     pickedUp = true;

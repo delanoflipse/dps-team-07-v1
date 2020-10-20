@@ -8,12 +8,22 @@
 
 /* CONSTANTS */
 #define SENSOR_LIMIT 100
-#define SENSOR_CONNECTED
+//#define USE_SENSORS
+//#define USE_AUDIO
+#define USE_BLE_PROXIMITY
+#define USE_LIGHTS
+#define USE_ORIENTATION
+
+#define RSSI_UPPER_LIMIT -60
+#define RSSI_LOWER_LIMIT -65
+
+enum Orientation { left, right, front, back, up, down, none };
+Orientation currentOrientation = up;
+enum MachineState { error, dorment, moving, siton };
+MachineState ambState = dorment;
 
 /* VARIABLES */
 // state variables
-// states: 0 -> dorment, 1 -> picked up, 3-> sit on
-int ambState = 0;
 int currentVolume = 0;
 int targetVolume = 0;
 
@@ -21,17 +31,32 @@ int targetVolume = 0;
 boolean sitOn = false;
 boolean pickedUp = false;
 boolean devicesNearby = false;
+int numberOfDevicesNearby = 0;
+int closestDevice = -100;
 
 /* SETUP */
 void setup() {
   // listen on serial connection for messages from the PC
   Serial.begin(9600);
 
+  #ifdef USE_BLE_PROXIMITY
   setupBluetooth();
+  #endif
+  
+  #ifdef USE_LIGHTS
   setupLights();
-  #ifdef SENSOR_CONNECTED
+  #endif
+  
+  #ifdef USE_ORIENTATION
+  setupOrientation();
+  #endif
+  
+  #ifdef USE_AUDIO
   setupAudio();
-  setupPickup();
+  #endif
+  
+  #ifdef USE_SENSORS
+//  setupPickup();
   setupSitDetector();
   #endif
 
@@ -43,42 +68,52 @@ void determineStateAndVolume() {
 
   // determine next state
   switch (ambState) {
-    // dorment
-    case 0:
+    case dorment:
       targetVolume = 0;
       // wake up if user is sitting
       if (sitOn) {
-        ambState = 2;
+        ambState = siton;
       }
       // wake up if user is sitting
       if (pickedUp) {
-        ambState = 1;
+        ambState = moving;
+      }
+      
+      if (closestDevice > RSSI_UPPER_LIMIT ) {
+        ambState = error;
       }
     break;
     
     // picked up
-    case 1:
-      targetVolume = 100;
+    case moving:
+      targetVolume = 31;
       // wake up if user is sitting
       if (!pickedUp) {
-        ambState = 0;
+        ambState = dorment;
         currentVolume = 0;
+      }
+    break;
+
+    case error:
+      if (closestDevice < RSSI_LOWER_LIMIT ) {
+        ambState = dorment;
       }
     break;
     
     // sit on
-    case 2:
-      targetVolume = 100;
+    case siton:
+      targetVolume = 31;
       if (!sitOn) {
-        ambState = 0;
+        ambState = dorment;
       }
 
       if (pickedUp) {
-        ambState = 1;
+        ambState = moving;
       }
     break;
     
     default:
+    ambState = ambState;
     break;
   }
 
@@ -91,32 +126,44 @@ void determineStateAndVolume() {
 
 /* main control loop */
 void loop() {
+  // input
+  #ifdef USE_BLE_PROXIMITY
   // get nearby AMB's
   getNearbyDevices();
+  #endif
+  
+  #ifdef USE_SENSORS
+//  determinePickedUp();
+  determineSitOn();
+  #endif
+  
+  #ifdef USE_ORIENTATION
+  determineOrientation();
+  #endif
 
   // determine colors, state and volume based on sensor values
   determineStateAndVolume();
-  
-  #ifdef SENSOR_CONNECTED
-  determinePickedUp();
-  determineSitOn();
-  #endif
-  loopAnimations();
 
-  // output
-  setLEDs(devicesNearby, ambState);
+  // output  
+  #ifdef USE_LIGHTS
+
+  loopAnimations();
+  setLEDs(devicesNearby, currentOrientation, ambState);
+  #endif
   
-  #ifdef SENSOR_CONNECTED
+  #ifdef USE_AUDIO
   setVolume(currentVolume);
   setAudio(devicesNearby, ambState);
   #endif
   
-//  Serial.print((int) devicesNearby);
-//  Serial.print('\t');
-//  Serial.print(ambState);
-//  Serial.print('\t');
-//  Serial.print(currentVolume);
-//  Serial.print('\t');
-//  Serial.print((int) pickedUp);
-//  Serial.println();
+  Serial.print(numberOfDevicesNearby);
+  Serial.print('\t');
+  Serial.print(closestDevice);
+  Serial.print('\t');  
+  Serial.print(stateToString(ambState));
+  Serial.print('\t');
+  Serial.print(orientationToString(currentOrientation));
+  Serial.print('\t');
+  Serial.print((int) pickedUp);
+  Serial.println();
 }

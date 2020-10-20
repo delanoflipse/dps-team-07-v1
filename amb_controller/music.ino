@@ -33,7 +33,7 @@ void setVolume(int vol) {
   lastVolume = vol;
 }
 
-void setAudio(int active, int state) {
+void setAudio(int active, MachineState state) {
   int newAudio = state == 1
     ? 1
     : active ? 2 : 3;
@@ -42,12 +42,15 @@ void setAudio(int active, int state) {
   switch (newAudio) {
     case 1:
     Mp3Player.playSDSong(PICKUP_AUDIO);
+    Mp3Player.playMode(SINGLE_CYCLE);
     break;
     case 2:
     Mp3Player.playSDSong(ACTIVE_AUDIO);
+    Mp3Player.playMode(SINGLE_CYCLE);
     break;
     case 3:
     Mp3Player.playSDSong(CALM_AUDIO);
+    Mp3Player.playMode(SINGLE_CYCLE);
     break;
   }
 
