@@ -7,8 +7,6 @@
 #define NUM_LEDS 3
 ChainableLED leds(7, 8, NUM_LEDS);
 
-/* VARIABLES */
-
 // idle fade variables
 #define ANIM_1_STATES 4
 int animation1[ANIM_1_STATES][3] = {
@@ -50,6 +48,7 @@ int animation_error[ANIM_ERR_STATES][3] = {
   {500, 0, 100},
 };
 
+/* VARIABLES */
 int animation1_values[] = {0, 0, 0};
 int animation2_values[] = {0, 0, 0};
 int animation3_values[] = {0, 0, 0};
@@ -104,11 +103,6 @@ float getHue(float hue) {
 
 /* calculate a new color for the LED's */
 void setLEDs(boolean devicesNearby, Orientation orientation, MachineState state) {
-  // active = red/yellow
-  // dorment = greenish
-//  float hue1 = devicesNearby ? 0 : 125.0 / 360.0;
-//  float hue2 = devicesNearby ? 15.0 / 360.0 : 120.0 / 360.0;
-//  float hue3 = devicesNearby ? 30.0 / 360.0 : 115.0 / 360.0;
   float hue1 = 0;
   float hue2 = 0;
   float hue3 = 0;
@@ -152,6 +146,23 @@ void setLEDs(boolean devicesNearby, Orientation orientation, MachineState state)
     hue2 = getHue(15.0);
     hue3 = getHue(30.0);
     break;
+    
+    case front:
+    // zen
+    saturation1 = 0.5;
+    saturation2 = 0.5;
+    saturation3 = 0.5;
+    hue1 = getHue(300.0);
+    hue2 = getHue(265.0);
+    hue3 = getHue(240.0);
+    break;
+    
+    case back:
+    // music
+    hue1 = getHue(34.0);
+    hue2 = getHue(46.0);
+    hue3 = getHue(55.0);
+    break;
 
     default:
     break;
@@ -160,14 +171,14 @@ void setLEDs(boolean devicesNearby, Orientation orientation, MachineState state)
   switch(state) {
     case siton:
     case dorment:
-    
-    // keep orientation color
+    // keep orientation color, use animations
     light1 = animation1_values[0] / 1024.0;
     light2 = animation2_values[0] / 1024.0;
     light3 = animation3_values[0] / 1024.0;
     break;
 
     case error:
+      // use alarm
       saturation1 = 1.0;
       saturation2 = 1.0;
       saturation3 = 1.0;
@@ -180,6 +191,7 @@ void setLEDs(boolean devicesNearby, Orientation orientation, MachineState state)
     break;
     
     case moving:
+      // override colors
       light1 = animation1_values[0] / 1024.0;
       light2 = animation2_values[0] / 1024.0;
       light3 = animation3_values[0] / 1024.0;
@@ -189,10 +201,7 @@ void setLEDs(boolean devicesNearby, Orientation orientation, MachineState state)
     break;
   }
 
-  // brightness is based on state
-  // active - based on music samples
-  // passive - based on fade loop
-  
+  // set LED's
   leds.setColorHSB(0, hue1, saturation1, light1);
   leds.setColorHSB(1, hue2, saturation2, light2);
   leds.setColorHSB(2, hue3, saturation3, light3);

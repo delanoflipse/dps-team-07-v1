@@ -5,14 +5,23 @@
  */
 
 #include <ArduinoBLE.h>
+#include "arduino_secrets.h"
+
+// device details
+String deviceBaseName = "Ambichair-iot-";
+String deviceUniqueName = "1";
+String deviceName = deviceBaseName + deviceUniqueName;
+
+String lastLog;
+unsigned long lastLogTime;
 
 /* CONSTANTS */
-#define SENSOR_LIMIT 100
-//#define USE_SENSORS
-//#define USE_AUDIO
+#define USE_SENSORS
+#define USE_AUDIO
 #define USE_BLE_PROXIMITY
 #define USE_LIGHTS
 #define USE_ORIENTATION
+//#define USE_WIFI
 
 #define RSSI_UPPER_LIMIT -60
 #define RSSI_LOWER_LIMIT -65
@@ -20,7 +29,7 @@
 enum Orientation { left, right, front, back, up, down, none };
 Orientation currentOrientation = up;
 enum MachineState { error, dorment, moving, siton };
-MachineState ambState = dorment;
+MachineState currentState = dorment;
 
 /* VARIABLES */
 // state variables
@@ -31,6 +40,7 @@ int targetVolume = 0;
 boolean sitOn = false;
 boolean pickedUp = false;
 boolean devicesNearby = false;
+boolean forceState = false;
 int numberOfDevicesNearby = 0;
 int closestDevice = -100;
 
@@ -41,6 +51,10 @@ void setup() {
 
   #ifdef USE_BLE_PROXIMITY
   setupBluetooth();
+  #endif
+  
+  #ifdef USE_WIFI
+  setupWiFi();
   #endif
   
   #ifdef USE_LIGHTS
@@ -60,6 +74,7 @@ void setup() {
   setupSitDetector();
   #endif
 
+  lastLogTime = millis();
   // log setup data
   Serial.println("Log: Board setup");
 }
@@ -67,53 +82,68 @@ void setup() {
 void determineStateAndVolume() {
 
   // determine next state
-  switch (ambState) {
+  switch (currentState) {
     case dorment:
       targetVolume = 0;
-      // wake up if user is sitting
-      if (sitOn) {
-        ambState = siton;
-      }
-      // wake up if user is sitting
-      if (pickedUp) {
-        ambState = moving;
-      }
-      
-      if (closestDevice > RSSI_UPPER_LIMIT ) {
-        ambState = error;
+
+      if (!forceState) {
+        if (sitOn) {
+          currentState = siton;
+        }
+  
+        if (pickedUp) {
+          currentState = moving;
+        }
+        
+        if (closestDevice > RSSI_UPPER_LIMIT ) {
+          currentState = error;
+        }
       }
     break;
     
     // picked up
     case moving:
       targetVolume = 31;
-      // wake up if user is sitting
-      if (!pickedUp) {
-        ambState = dorment;
-        currentVolume = 0;
+      
+      if (!forceState) {
+        if (!pickedUp) {
+          currentState = dorment;
+          currentVolume = 0;
+        }
       }
     break;
 
     case error:
-      if (closestDevice < RSSI_LOWER_LIMIT ) {
-        ambState = dorment;
+      targetVolume = 31;
+      
+      if (!forceState) {
+        if (closestDevice < RSSI_LOWER_LIMIT ) {
+          currentState = dorment;
+        }
       }
     break;
     
     // sit on
     case siton:
       targetVolume = 31;
-      if (!sitOn) {
-        ambState = dorment;
-      }
-
-      if (pickedUp) {
-        ambState = moving;
+      
+      if (!forceState) {
+        if (!sitOn) {
+          currentState = dorment;
+        }
+  
+        if (pickedUp) {
+          currentState = moving;
+        }
+        
+        if (closestDevice > RSSI_UPPER_LIMIT ) {
+          currentState = error;
+        }
       }
     break;
     
     default:
-    ambState = ambState;
+    currentState = currentState;
     break;
   }
 
@@ -132,6 +162,10 @@ void loop() {
   getNearbyDevices();
   #endif
   
+  #ifdef USE_WIFI
+  loopWiFi();
+  #endif
+  
   #ifdef USE_SENSORS
 //  determinePickedUp();
   determineSitOn();
@@ -146,24 +180,34 @@ void loop() {
 
   // output  
   #ifdef USE_LIGHTS
-
   loopAnimations();
-  setLEDs(devicesNearby, currentOrientation, ambState);
+  setLEDs(devicesNearby, currentOrientation, currentState);
   #endif
   
   #ifdef USE_AUDIO
+  setAudio(devicesNearby, currentOrientation, currentState);
   setVolume(currentVolume);
-  setAudio(devicesNearby, ambState);
   #endif
-  
-  Serial.print(numberOfDevicesNearby);
-  Serial.print('\t');
-  Serial.print(closestDevice);
-  Serial.print('\t');  
-  Serial.print(stateToString(ambState));
-  Serial.print('\t');
-  Serial.print(orientationToString(currentOrientation));
-  Serial.print('\t');
-  Serial.print((int) pickedUp);
-  Serial.println();
+
+  unsigned long timing = millis();
+  String logStr = deviceName
+    + '\t' + numberOfDevicesNearby
+    + '\t' + closestDevice
+    + '\t' + stateToString(currentState)
+    + '\t' + orientationToString(currentOrientation)
+    + '\t' + (int) forceState
+    + '\t' + pickedUp;
+      
+  if (lastLog != logStr || timing > lastLogTime + 1000) {
+    lastLog = logStr;
+    lastLogTime = timing;
+    
+    // LOG EVENTS
+    #ifdef USE_WIFI
+    logWiFi(logStr);
+    #else
+    Serial.println(logStr);
+    #endif
+  }
+
 }

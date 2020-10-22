@@ -50,7 +50,7 @@ float runningMaximum(int arr[], const int len, int newValue) {
 String stateToString(MachineState state) {
   switch (state) {
     case dorment:
-    return "dormet";
+    return "dorment";
     case moving:
     return "moving";
     case error:

@@ -1,8 +1,20 @@
 #include "WT2003S_Player.h"
 
-#define CALM_AUDIO "calm.mp3"
-#define ACTIVE_AUDIO "active.mp3"
-#define PICKUP_AUDIO "pickup.mp3"
+#define FOREST_AUDIO "b001.mp3"
+#define ZEN_AUDIO "z001.mp3"
+#define RAIN_AUDIO "r001.mp3"
+#define FIRE_AUDIO "f001.mp3"
+
+#define PICKUP_AUDIO "p001.mp3"
+#define ALARM_AUDIO "a001.mp3"
+
+#define TRANSITION_DURATION 1000
+
+const int numberOfJazzSongs = 2;
+String jazzSongs[numberOfJazzSongs] = { "j001.mp3", "j002.mp3" };
+int jazzSongDurations[numberOfJazzSongs] = { 67813, 146917 };
+int currentJazzSong = -1;
+unsigned long lastSongStart;
 
 #ifdef __AVR__
     #include <SoftwareSerial.h>
@@ -25,44 +37,120 @@
 #endif
 
 int lastVolume = 0;
-int lastAudio = 0;
+String lastAudio = "none";
+String newAudio = "none";
 
 void setVolume(int vol) {
-  if (lastVolume == vol) return;
+  // only update when value changes
+  if (lastVolume == vol) {
+    return;
+  }
+  
   Mp3Player.volume(vol);
   lastVolume = vol;
 }
 
-void setAudio(int active, MachineState state) {
-  int newAudio = state == 1
-    ? 1
-    : active ? 2 : 3;
+void setAudio(int active, Orientation orientation, MachineState state) {
+  PLAY_MODE newPlayMode = SINGLE_CYCLE;
+  // determine audio
+  switch(orientation) {
+    case up:
+    // none
+    newAudio = "none";
+    break;
+    
+    case down:
+    newAudio = RAIN_AUDIO;
+    break;
+    
+    case right:
+    newAudio = FOREST_AUDIO;
+    break;
+    
+    case left:
+    newAudio = FIRE_AUDIO;
+    break;
+    
+    case front:
+    newAudio = ZEN_AUDIO;
+    break;
+    
+    case back:
+    newPlayMode = SINGLE_SHOT;
+    if (currentJazzSong > -1) {
+      if (millis() > lastSongStart + jazzSongDurations[currentJazzSong] + TRANSITION_DURATION) {
+         currentJazzSong = (currentJazzSong + 1) % numberOfJazzSongs;
+      }
+    } else {
+      currentJazzSong = random(numberOfJazzSongs);
+    }
+    
+    newAudio = jazzSongs[currentJazzSong];
+    break;
+
+    default:
+    break;
+  }
   
-  if (lastAudio == newAudio) return;
-  switch (newAudio) {
-    case 1:
-    Mp3Player.playSDSong(PICKUP_AUDIO);
-    Mp3Player.playMode(SINGLE_CYCLE);
+  switch(state) {
+    case siton:
+    case dorment:
     break;
-    case 2:
-    Mp3Player.playSDSong(ACTIVE_AUDIO);
-    Mp3Player.playMode(SINGLE_CYCLE);
+
+    case error:
+      newAudio = ALARM_AUDIO;
     break;
-    case 3:
-    Mp3Player.playSDSong(CALM_AUDIO);
-    Mp3Player.playMode(SINGLE_CYCLE);
+    
+    case moving:
+      newAudio = PICKUP_AUDIO;
+    break;
+    
+    default:
     break;
   }
 
-//  Mp3Player.pause_or_play();
+  // only update when value changes
+  if (lastAudio == newAudio) {
+    return;
+  }
+
+  if (!newAudio.startsWith("j")) {
+    currentJazzSong = -1;
+  }
+
+  Serial.println(newAudio);
+  
+  if (newAudio != "none") {
+    int error = Mp3Player.playSDSong(newAudio.c_str());
+    Mp3Player.playMode(newPlayMode);
+    lastSongStart = millis();
+
+    if (error == -1) {
+      Serial.println("Error playing audio!");
+    }
+  } else if (newAudio == "none") {
+    int status = Mp3Player.getStatus();
+    if (status == 1) {
+      Mp3Player.pause_or_play();
+    }
+  }
+
   lastAudio = newAudio;
 }
 
 void setupAudio() {
   COMSerial.begin(9600);
   Mp3Player.init(COMSerial);
-  Mp3Player.playMode(SINGLE_CYCLE);
-  
   setVolume(0);
-  Mp3Player.pause_or_play();
+  
+  int status = Mp3Player.getDiskStatus();
+
+  if (status == 0) {
+    Serial.println("MP3 ERROR: no SD card!");
+  } else if (status == 2) {
+    Serial.println("MP3 ready!");
+  } else {
+    Serial.println("MP3 ERROR: unkown error");
+  }
+
 }

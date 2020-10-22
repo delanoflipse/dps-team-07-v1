@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="style.css">
+    <title>AMB controller view</title>
+</head>
+<body>
+    <div id="app" v-cloak>
+        <div class="devices">
+            <div
+                class="device"
+                v-for="(device, key) in devices"
+                :key="key"
+            >
+                <div class="title">{{ key }}</div>
+                <div class="state state-name">{{ device.state }}</div>
+                <div class="state state-mode">{{ device.mode }}</div>
+                <div class="state state-orientation">{{ device.orientation }}</div>
+                <div class="state state-forced" v-if="device.forced">Forced State</div>
+    
+                <div class="device-actions">
+                    <button :disabled="device.state == 'dorment'" @click="updateState(device, 'dorment')">Make dorment</button>
+                    <button :disabled="device.state == 'sit_on'" @click="updateState(device, 'siton')">Wake up</button>
+                    <button :disabled="device.state == 'error'" @click="updateState(device, 'error')">Error</button>
+                    <button :disabled="device.state == 'moving'" @click="updateState(device, 'moving')">Picked up</button>
+                    <button :disabled="!device.forced" @click="updateState(device, 'reset')">Self determine</button>
+                </div>
+                
+                <div style="margin-top: 8px">
+                    <span>Last update: {{asTimeSince(device)}}</span>
+                </div>
+                <div>
+                    <span>{{moment(device.lastUpdate).fromNow()}}</span>
+                </div>
+                
+            </div>
+            
+        </div>
+        
+        <pre>{{ devices }}</pre>
+        
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/vue"></script> -->
+    <script src="/index.js"></script>
+</body>
+</html>

@@ -29,58 +29,25 @@ void determineOrientation() {
     boolean gravX = abs(x) > ORIENTATION_GRAV_MARGIN;
     boolean gravY = abs(y) > ORIENTATION_GRAV_MARGIN;
     boolean gravZ = abs(z) > ORIENTATION_GRAV_MARGIN;
-    
-    switch (currentOrientation) {
-      case none:
-      break;
-      default:
-      break;
-    }
-  
-//    Serial.print(x);
-//    Serial.print('\t');
-//    Serial.print(y);
-//    Serial.print('\t');
-//    Serial.print(z);
-//    Serial.print('\t');
-//    Serial.print(acc);
-//    Serial.print('\t');
-//    Serial.print(moving);
 
     if (acc < GRAVITY + ORIENTATION_ACC_MARGIN && acc > GRAVITY - ORIENTATION_ACC_MARGIN) {
       moving = 0;
-      
-//      Serial.print(0);
-//      Serial.print('\t');
 
       if (smallX && smallY && gravZ && z > 0) {
         currentOrientation = up;
-//        Serial.print("up");
       } else if (smallX && smallY && gravZ && z < 0) {
         currentOrientation = down;
-//        Serial.print("down");
       } else if (smallX && smallZ && gravY && y > 0) {
         currentOrientation = left;
-//        Serial.print("left");
       } else if (smallX && smallZ && gravY && y < 0) {
         currentOrientation = right;
-//        Serial.print("right");
       } else if (smallZ && smallY && gravX && x > 0) {
         currentOrientation = back;
-//        Serial.print("back");
       } else if (smallZ && smallY && gravX && x < 0) {
         currentOrientation = front;
-//        Serial.print("front");
       } else {
-//        currentOrientation = none;
-//        Serial.print("none");
+        // ?
       }
-    } else {
-//      Serial.print(1);
-//      Serial.print('\t');
-//      Serial.print(-1);
     }
-//    
-//    Serial.println();
   }
 }

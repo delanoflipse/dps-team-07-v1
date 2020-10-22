@@ -1,0 +1,75 @@
+* { box-sizing: border-box; }
+
+html, body {
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	padding: 0;
+	font-family: "Roboto", sans-serif;
+}
+
+body {
+    display: block;
+}
+
+#app {
+    padding: 24px;
+}
+
+[v-cloak] {
+    display: none !important;
+}
+
+.devices {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 250px);
+    grid-gap: 16px;
+}
+
+.device {
+    width: 250px;
+    padding: 16px;
+    box-shadow: 0 1px 3px 1px rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+}
+
+.device .title {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.device .state {
+    font-size: 14px;
+    display: inline-block;
+    border-radius: 9999px;
+    background: #444;
+    color: white;
+    padding: 4px 8px;
+    margin-bottom: 8px;
+    margin-right: 2px;
+}
+
+.device .device-actions {
+    display: flex;
+    flex-direction: column;
+}
+
+.device .device-actions button {
+    padding: 8px;
+    margin-top: 16px;
+}
+
+.device .state.state-forced {
+    background: red;
+}
+
+pre {
+    display: inline-block;
+    margin: 24px 0;
+    border: 1px solid #ccc;
+    padding: 16px;
+    background: #f1f1f1;
+    max-height: 400px;
+    overflow: auto;
+}
