@@ -45,7 +45,7 @@ void connectWiFi() {
   }
 
   Serial.print("\nconnecting...");
-  while (!client.connect("amb-arduino", "6dd995c1", "c73008b89c650200")) {
+  while (!client.connect("amb-arduino", SHIFTR_KEY, SHIFTR_SECRET)) {
     Serial.print(".");
     delay(1000);
   }
