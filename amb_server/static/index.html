@@ -10,6 +10,11 @@
 </head>
 <body>
     <div id="app" v-cloak>
+        <div class="global-slider">
+            <label>Global distance ({{ dist }})</label>
+            <div class="slider-state" :class="{ safe, alone }">{{ distanceState }}</div>
+            <input type="range" min="0" max="8000" v-model="distance" @input="distanceChange">
+        </div>
         <div class="devices">
             <div
                 class="device"
@@ -17,17 +22,28 @@
                 :key="key"
             >
                 <div class="title">{{ key }}</div>
-                <div class="state state-name">{{ device.state }}</div>
-                <div class="state state-mode">{{ device.mode }}</div>
-                <div class="state state-orientation">{{ device.orientation }}</div>
+                <div class="state state-name"
+                    :style="{
+                        background: deviceStateBackgroundcolor(device),
+                        color: deviceStateColor(device)
+                    }"
+                
+                >{{ device.state }}</div>
+                <div class="state state-mode"
+                    :style="{
+                        background: deviceOrientBackgroundcolor(device),
+                        color: deviceOrientColor(device)
+                    }"
+                
+                >{{ device.mode }} // {{ device.orientation }}</div>
                 <div class="state state-forced" v-if="device.forced">Forced State</div>
     
                 <div class="device-actions">
                     <button :disabled="device.state == 'dorment'" @click="updateState(device, 'dorment')">Make dorment</button>
                     <button :disabled="device.state == 'sit_on'" @click="updateState(device, 'siton')">Wake up</button>
-                    <button :disabled="device.state == 'error'" @click="updateState(device, 'error')">Error</button>
+                    <!-- <button :disabled="device.state == 'error'" @click="updateState(device, 'error')">Error</button> -->
                     <button :disabled="device.state == 'moving'" @click="updateState(device, 'moving')">Picked up</button>
-                    <button :disabled="!device.forced" @click="updateState(device, 'reset')">Self determine</button>
+                    <!-- <button :disabled="!device.forced" @click="updateState(device, 'reset')">Self determine</button> -->
                 </div>
                 
                 <div style="margin-top: 8px">
@@ -37,11 +53,13 @@
                     <span>{{moment(device.lastUpdate).fromNow()}}</span>
                 </div>
                 
+                <div class="state state-connected" :class="{ connected: connected(device) }">{{ connected(device) ? 'connected' : 'disconnected!' }}</div>
+                
             </div>
             
         </div>
         
-        <pre>{{ devices }}</pre>
+        <pre>raw device data:<br><br>{{ devices }}</pre>
         
     </div>
 
@@ -49,6 +67,6 @@
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
     <!-- <script src="https://cdn.jsdelivr.net/npm/vue"></script> -->
-    <script src="/index.js"></script>
+    <script src="/script.js"></script>
 </body>
 </html>

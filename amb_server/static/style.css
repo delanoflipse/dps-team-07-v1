@@ -27,7 +27,6 @@ body {
 }
 
 .device {
-    width: 250px;
     padding: 16px;
     box-shadow: 0 1px 3px 1px rgba(0, 0, 0, 0.1);
     border-radius: 3px;
@@ -48,6 +47,7 @@ body {
     padding: 4px 8px;
     margin-bottom: 8px;
     margin-right: 2px;
+    font-weight: bold;
 }
 
 .device .device-actions {
@@ -64,6 +64,17 @@ body {
     background: red;
 }
 
+.device .state.state-connected {
+    background: red;
+    color: white;
+    margin-top: 8px;
+}
+
+.device .state.state-connected.connected {
+    background:  #dedede;
+    color: #444;
+}
+
 pre {
     display: inline-block;
     margin: 24px 0;
@@ -71,5 +82,37 @@ pre {
     padding: 16px;
     background: #f1f1f1;
     max-height: 400px;
+    width: 100%;
+    max-width: 800px;
     overflow: auto;
+}
+
+.global-slider {
+    margin-bottom: 16px;
+    width: 100%;
+    max-width: 800px;
+}
+
+.global-slider input {
+    width: 100%;
+}
+
+.global-slider .slider-state {
+    color: red;
+}
+
+.global-slider .slider-state.safe {
+    color: green;
+}
+
+.global-slider .slider-state.safe.alone {
+    color: grey;
+}
+
+
+@media screen and (max-width: 800px) {
+    .devices {
+        grid-template-columns: auto;
+        grid-template-rows: auto;
+    }
 }
