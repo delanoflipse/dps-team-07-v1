@@ -1,7 +1,7 @@
 /**
  * @file amb_controller.ino
  * @copyright Delano Flipse 2020
- * Control the AMB's behaviour using bluetooth and light sensors
+ * Controls the overall AMB's behaviour
  */
 
 #include <ArduinoBLE.h>
@@ -32,7 +32,6 @@ enum MachineState { error, dorment, moving, siton };
 MachineState currentState = dorment;
 
 /* VARIABLES */
-// state variables
 int currentVolume = 0;
 int targetVolume = 0;
 
@@ -84,8 +83,6 @@ void determineStateAndVolume() {
   // determine next state
   switch (currentState) {
     case dorment:
-      targetVolume = 0;
-
       if (!forceState) {
         if (sitOn) {
           currentState = siton;
@@ -103,30 +100,25 @@ void determineStateAndVolume() {
     
     // picked up
     case moving:
-      targetVolume = 31;
       
       if (!forceState) {
         if (!pickedUp) {
+          currentState = dorment;
+        }
+      }
+    break;
+
+    case error:      
+      if (!forceState) {
+        if (closestDevice < RSSI_LOWER_LIMIT ) {
           currentState = dorment;
           currentVolume = 0;
         }
       }
     break;
-
-    case error:
-      targetVolume = 31;
-      
-      if (!forceState) {
-        if (closestDevice < RSSI_LOWER_LIMIT ) {
-          currentState = dorment;
-        }
-      }
-    break;
     
     // sit on
-    case siton:
-      targetVolume = 31;
-      
+    case siton:      
       if (!forceState) {
         if (!sitOn) {
           currentState = dorment;
@@ -145,11 +137,6 @@ void determineStateAndVolume() {
     default:
     currentState = currentState;
     break;
-  }
-
-  // move volume to the target volume
-  if (targetVolume != currentVolume) {
-    currentVolume += targetVolume > currentVolume ? 1 : -1;
   }
 }
 
@@ -186,7 +173,6 @@ void loop() {
   
   #ifdef USE_AUDIO
   setAudio(devicesNearby, currentOrientation, currentState);
-  setVolume(currentVolume);
   #endif
 
   unsigned long timing = millis();

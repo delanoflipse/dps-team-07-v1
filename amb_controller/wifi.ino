@@ -1,3 +1,9 @@
+/**
+ * @file wifi.ino
+ * @copyright Delano Flipse 2020
+ * WiFi communication using Shiftr.io pub/sub.
+ */
+ 
 #include <SPI.h>
 #include <WiFiNINA.h>
 #include <MQTT.h>

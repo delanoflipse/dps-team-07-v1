@@ -1,4 +1,9 @@
-
+/**
+ * @file pick_up.ino
+ * @copyright Delano Flipse 2020
+ * Determine picked up state based on on the accelerometers, or a IR sensor.
+ */
+ 
 #define Z_OFFSET 0.98
 #define Z_TRIGGER 0.12
 #define Z_MAX_NOISE 0.03

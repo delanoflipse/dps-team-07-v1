@@ -1,20 +1,27 @@
+/**
+ * @file music.ino
+ * @copyright Delano Flipse 2020
+ * Randomised continues audio player based on state.
+ */
+ 
 #include "WT2003S_Player.h"
 
-#define FOREST_AUDIO "b001.mp3"
-#define ZEN_AUDIO "z001.mp3"
-#define RAIN_AUDIO "r001.mp3"
-#define FIRE_AUDIO "f001.mp3"
+struct AudioCollection {
+  int size;
+  int index;
+  char prefix[2];
+};
 
-#define PICKUP_AUDIO "p001.mp3"
-#define ALARM_AUDIO "a001.mp3"
+#define MAX_VOLUME 15
+#define ALARM_AUDIO "AL01.mp3"
 
-#define TRANSITION_DURATION 1000
+struct AudioCollection forestAudios = { 1, -1, { 'F', 'S' } };
+struct AudioCollection zenAudios = { 1, -1, { 'Z', 'N' } };
+struct AudioCollection fireAudios = { 1, -1, { 'F', 'R' } };
+struct AudioCollection jazzAudios = { 2, -1, { 'J', 'Z' } };
+struct AudioCollection rainAudios = { 3, -1, { 'R', 'N' } };
 
-const int numberOfJazzSongs = 2;
-String jazzSongs[numberOfJazzSongs] = { "j001.mp3", "j002.mp3" };
-int jazzSongDurations[numberOfJazzSongs] = { 67813, 146917 };
-int currentJazzSong = -1;
-unsigned long lastSongStart;
+// #define TRANSITION_DURATION 1000
 
 #ifdef __AVR__
     #include <SoftwareSerial.h>
@@ -39,6 +46,7 @@ unsigned long lastSongStart;
 int lastVolume = 0;
 String lastAudio = "none";
 String newAudio = "none";
+PLAY_MODE playMode = SINGLE_CYCLE;
 
 void setVolume(int vol) {
   // only update when value changes
@@ -50,8 +58,37 @@ void setVolume(int vol) {
   lastVolume = vol;
 }
 
+String setNewAudio(struct AudioCollection collection, int status) {
+  bool playing = status == 1;
+  if (collection.size > 1) {
+    playMode = SINGLE_SHOT;
+    if (collection.index > -1 && !playing) {
+      collection.index = collection.index == collection.size ? 1 : collection.index + 1;
+    } else if (collection.index == -1) {
+      collection.index = random(collection.size);
+    }
+  } else {
+    playMode = SINGLE_CYCLE;
+    collection.index = 1;
+  }
+
+  String songName = String(collection.prefix[0]) + String(collection.prefix[1]);
+  songName += collection.index < 10 ? "0" + String(collection.index) : String(collection.index);
+  songName += ".mp3";
+  return songName;
+}
+
 void setAudio(int active, Orientation orientation, MachineState state) {
-  PLAY_MODE newPlayMode = SINGLE_CYCLE;
+  // move volume to the target volume
+  if (targetVolume != currentVolume) {
+    currentVolume += targetVolume > currentVolume ? 1 : -1;
+  }
+
+  setVolume(currentVolume);
+
+  // warn: does this influence performance?
+  int status = Mp3Player.getStatus();
+
   // determine audio
   switch(orientation) {
     case up:
@@ -60,32 +97,23 @@ void setAudio(int active, Orientation orientation, MachineState state) {
     break;
     
     case down:
-    newAudio = RAIN_AUDIO;
+    newAudio = setNewAudio(rainAudios, status);
     break;
     
     case right:
-    newAudio = FOREST_AUDIO;
+    newAudio = setNewAudio(forestAudios, status);
     break;
     
     case left:
-    newAudio = FIRE_AUDIO;
+    newAudio = setNewAudio(fireAudios, status);
     break;
     
     case front:
-    newAudio = ZEN_AUDIO;
+    newAudio = setNewAudio(zenAudios, status);
     break;
     
     case back:
-    newPlayMode = SINGLE_SHOT;
-    if (currentJazzSong > -1) {
-      if (millis() > lastSongStart + jazzSongDurations[currentJazzSong] + TRANSITION_DURATION) {
-         currentJazzSong = (currentJazzSong + 1) % numberOfJazzSongs;
-      }
-    } else {
-      currentJazzSong = random(numberOfJazzSongs);
-    }
-    
-    newAudio = jazzSongs[currentJazzSong];
+    newAudio = setNewAudio(jazzAudios, status);
     break;
 
     default:
@@ -94,15 +122,22 @@ void setAudio(int active, Orientation orientation, MachineState state) {
   
   switch(state) {
     case siton:
+      targetVolume = MAX_VOLUME;
+    break;
+
     case dorment:
+      targetVolume = 0;
     break;
 
     case error:
+      playMode = SINGLE_CYCLE;
       newAudio = ALARM_AUDIO;
+      targetVolume = MAX_VOLUME;
+      currentVolume = MAX_VOLUME;
     break;
     
     case moving:
-      newAudio = PICKUP_AUDIO;
+      targetVolume = MAX_VOLUME;
     break;
     
     default:
@@ -114,22 +149,17 @@ void setAudio(int active, Orientation orientation, MachineState state) {
     return;
   }
 
-  if (!newAudio.startsWith("j")) {
-    currentJazzSong = -1;
-  }
-
+  // todo: reset other audios
   Serial.println(newAudio);
   
   if (newAudio != "none") {
     int error = Mp3Player.playSDSong(newAudio.c_str());
-    Mp3Player.playMode(newPlayMode);
-    lastSongStart = millis();
+    Mp3Player.playMode(playMode);
 
     if (error == -1) {
       Serial.println("Error playing audio!");
     }
   } else if (newAudio == "none") {
-    int status = Mp3Player.getStatus();
     if (status == 1) {
       Mp3Player.pause_or_play();
     }

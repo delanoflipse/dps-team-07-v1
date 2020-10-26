@@ -1,4 +1,9 @@
-
+/**
+ * @file bluetooth.ino
+ * @copyright Delano Flipse 2020
+ * Use BLE for proximity detection
+ */
+ 
 #include <ArduinoBLE.h>
 // Fix for library:
 // GAP.ccp#173 HCI.leSetScanParameters(0x01, <interval> + 0x0010, <interval> + 0x0010, 0x00, 0x00

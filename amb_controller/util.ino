@@ -1,4 +1,10 @@
+/**
+ * @file util.ino
+ * @copyright Delano Flipse 2020
+ * Reusable utilities
+ */
 
+ 
 void fillArray(float arr[], const int len, float defaultValue) {
   for (int i = 0; i < len; i++) {
     arr[i] = defaultValue;

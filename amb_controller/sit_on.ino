@@ -1,4 +1,10 @@
-
+/**
+ * @file sit_on.ino
+ * @copyright Delano Flipse 2020
+ * ! Work in progress
+ * A toggle for user presence.
+ */
+ 
 #define SIT_DETECTOR_PIN A0
 
 int lastValue = 0;

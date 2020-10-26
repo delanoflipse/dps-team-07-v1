@@ -1,4 +1,9 @@
-
+/**
+ * @file lights.ino
+ * @copyright Delano Flipse 2020
+ * Animated lights based on the current state
+ */
+ 
 /* LIBRARIES */
 #include <ChainableLED.h>
 

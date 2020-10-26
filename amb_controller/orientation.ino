@@ -1,4 +1,9 @@
-
+/**
+ * @file orientation.ino
+ * @copyright Delano Flipse 2020
+ * Determine orientation based on gravity working on the accelerometers.
+ */
+ 
 #include <Arduino_LSM6DS3.h>
 
 #define GRAVITY 0.98
