@@ -13,6 +13,7 @@ socket.on('/log-device', (data) => {
     const [ id, nearby, closest, state, orientation, forced, pickedUp ] = data.split(/\t/g);
     const lastUpdate = moment().valueOf();
     const mode = stateMap[orientation];
+
     app.$set(app.devices, id, {
         id,
         nearby,
@@ -26,18 +27,37 @@ socket.on('/log-device', (data) => {
     });
 });
 
+socket.on('/amb-global-distance', (data) => {
+    app.distance = Number(data);
+});
+
 const app = new Vue({
     el: '#app',
     data: {
         devices: {},
+        distance: 6000,
         moment,
     },
+
     methods: {
         updateState(device, newState) {
             socket.emit('setState', device.id, newState);
         },
         asTimeSince(device) {
             return moment(device.lastUpdate).format("HH:mm:ss");
-        }
+        },
+        distanceChange() {
+            socket.emit('setDistance', this.distance);
+        },
+    },
+
+    computed: {
+        dist() {
+            const meters = this.distance / 1000;
+            return `${meters.toFixed(2)} m`;
+        },
+        safe() {
+            return Number(this.distance) > 1500;
+        },
     },
 });

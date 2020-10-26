@@ -16,6 +16,7 @@ client.on('connect', () => {
 	console.log('client has connected!');
 
 	client.subscribe('/log-device');
+	client.subscribe('/amb-global-distance');
 	// client.unsubscribe('/example');
 });
 
@@ -27,6 +28,9 @@ client.on('message', (topic, message) => {
 io.on('connection', (socket) => {
 	socket.on('setState', (id, newState) => {
 		client.publish(`/amb-action-${id}`, `0\t${newState}`);
+	});
+	socket.on('setDistance', (newDistance) => {
+		client.publish(`/amb-global-distance`, newDistance);
 	});
 });
 

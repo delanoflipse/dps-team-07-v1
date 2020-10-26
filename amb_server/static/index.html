@@ -10,6 +10,11 @@
 </head>
 <body>
     <div id="app" v-cloak>
+        <div class="global-slider">
+            <label>Global distance ({{ dist }})</label>
+            <div class="slider-state" :class="{ safe }">{{ safe ? "Safe" : "Danger" }}</div>
+            <input type="range" min="0" max="8000" v-model="distance" @input="distanceChange">
+        </div>
         <div class="devices">
             <div
                 class="device"
@@ -25,9 +30,9 @@
                 <div class="device-actions">
                     <button :disabled="device.state == 'dorment'" @click="updateState(device, 'dorment')">Make dorment</button>
                     <button :disabled="device.state == 'sit_on'" @click="updateState(device, 'siton')">Wake up</button>
-                    <button :disabled="device.state == 'error'" @click="updateState(device, 'error')">Error</button>
+                    <!-- <button :disabled="device.state == 'error'" @click="updateState(device, 'error')">Error</button> -->
                     <button :disabled="device.state == 'moving'" @click="updateState(device, 'moving')">Picked up</button>
-                    <button :disabled="!device.forced" @click="updateState(device, 'reset')">Self determine</button>
+                    <!-- <button :disabled="!device.forced" @click="updateState(device, 'reset')">Self determine</button> -->
                 </div>
                 
                 <div style="margin-top: 8px">

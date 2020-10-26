@@ -73,3 +73,13 @@ pre {
     max-height: 400px;
     overflow: auto;
 }
+
+.global-slider {
+    margin-bottom: 16px;
+    width: 100%;
+    max-width: 800px;
+}
+
+.global-slider input {
+    width: 100%;
+}
