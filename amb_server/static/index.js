@@ -34,8 +34,20 @@ socket.on('/amb-global-distance', (data) => {
 const app = new Vue({
     el: '#app',
     data: {
-        devices: {},
         distance: 6000,
+        devices: {
+            'test-device': {
+                id: 'x',
+                nearby: null,
+                closest: null,
+                state: 'dorment',
+                orientation: 'left',
+                mode: 'forest',
+                lastUpdate: new Date().valueOf(),
+                forced: false,
+                pickedUp: false,
+            },
+        },
         moment,
     },
 
