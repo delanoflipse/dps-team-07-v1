@@ -29,7 +29,19 @@ socket.on('/log-device', (data) => {
 const app = new Vue({
     el: '#app',
     data: {
-        devices: {},
+        devices: {
+            'test-device': {
+                id: 'x',
+                nearby: null,
+                closest: null,
+                state: 'dorment',
+                orientation: 'left',
+                mode: 'forest',
+                lastUpdate: new Date().valueOf(),
+                forced: false,
+                pickedUp: false,
+            },
+        },
         moment,
     },
     methods: {
