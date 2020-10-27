@@ -21,7 +21,7 @@ unsigned long lastLogTime;
 //#define USE_BLE_PROXIMITY
 #define USE_LIGHTS
 #define USE_ORIENTATION
-#define USE_WIFI
+//#define USE_WIFI
 
 #define CLOSEST_DEVICE_UPPER_LIMIT 1500
 #define CLOSEST_DEVICE_LOWER_LIMIT 1800
@@ -29,7 +29,7 @@ unsigned long lastLogTime;
 enum Orientation { left, right, front, back, up, down, none };
 Orientation currentOrientation = up;
 enum MachineState { error, dorment, moving, siton };
-MachineState currentState = dorment;
+MachineState currentState = siton;
 
 /* VARIABLES */
 int currentVolume = 0;
@@ -42,7 +42,6 @@ boolean devicesNearby = false;
 boolean forceState = false;
 int numberOfDevicesNearby = 0;
 int closestDevice = 8000;
-#define MAX_VOLUME 20
 
 /* SETUP */
 void setup() {
