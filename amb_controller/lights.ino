@@ -4,7 +4,7 @@
 
 /* CONSTANTS */
 
-#define NUM_LEDS 3
+#define NUM_LEDS 6
 ChainableLED leds(7, 8, NUM_LEDS);
 
 // idle fade variables
@@ -41,11 +41,13 @@ int animation3[ANIM_2_STATES][3] = {
   {500, 0, 2500},
 };
 // idle fade variables
-#define ANIM_ERR_STATES 5
+#define ANIM_ERR_STATES 4
 int animation_error[ANIM_ERR_STATES][3] = {
   // start, end, duration
+  {0, 0, 50},
   {0, 500, 500},
   {500, 0, 100},
+  {0, 0, 1750},
 };
 
 /* VARIABLES */
@@ -53,7 +55,7 @@ int animation1_values[] = {0, 0, 0};
 int animation2_values[] = {0, 0, 0};
 int animation3_values[] = {0, 0, 0};
 int animation_error_values[] = {0, 0, 0};
-
+bool wasError = false;
 unsigned long lastAnimationUpdate = 0;
 
 void setupLights() {
@@ -86,7 +88,7 @@ void progressAnimation(int animation[][3], int arrayLength, int values[3], int d
   values[0] = map(*progress, 0, duration, start, end);
 }
 
-void loopAnimations() {
+void loopAnimations(boolean devicesNearby, Orientation orientation, MachineState state) {
   unsigned long timeNow = millis();
   int delta = timeNow - lastAnimationUpdate;
   lastAnimationUpdate = timeNow;
@@ -94,6 +96,18 @@ void loopAnimations() {
   progressAnimation(animation1, ANIM_1_STATES, animation1_values, delta);
   progressAnimation(animation2, ANIM_2_STATES, animation2_values, delta);
   progressAnimation(animation3, ANIM_3_STATES, animation3_values, delta);
+  
+  if (state == error && !wasError) {
+    wasError = true;
+    animation_error_values[0] = 0;
+    animation_error_values[1] = 0;
+    animation_error_values[2] = 0;
+  }
+  
+  if (state != error && wasError) {
+    wasError = false;
+    
+  }
   progressAnimation(animation_error, ANIM_ERR_STATES, animation_error_values, delta);
 }
 
@@ -192,6 +206,13 @@ void setLEDs(boolean devicesNearby, Orientation orientation, MachineState state)
     
     case moving:
       // override colors
+      saturation1 = 1.0;
+      saturation2 = 1.0;
+      saturation3 = 1.0;
+      hue1 = getHue(0.0);
+      hue1 = getHue(325.0);
+      hue2 = getHue(310.0);
+      hue3 = getHue(285.0);
       light1 = animation1_values[0] / 1024.0;
       light2 = animation2_values[0] / 1024.0;
       light3 = animation3_values[0] / 1024.0;
@@ -205,4 +226,7 @@ void setLEDs(boolean devicesNearby, Orientation orientation, MachineState state)
   leds.setColorHSB(0, hue1, saturation1, light1);
   leds.setColorHSB(1, hue2, saturation2, light2);
   leds.setColorHSB(2, hue3, saturation3, light3);
+  leds.setColorHSB(3, hue1, saturation1, light1);
+  leds.setColorHSB(4, hue2, saturation2, light2);
+  leds.setColorHSB(5, hue3, saturation3, light3);
 }

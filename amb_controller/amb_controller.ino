@@ -8,23 +8,23 @@
 #include "arduino_secrets.h"
 
 // device details
-String deviceBaseName = "Ambichair-iot-";
-String deviceUniqueName = "1";
+String deviceBaseName = "AMB-IOT-";
+String deviceUniqueName = "2";
 String deviceName = deviceBaseName + deviceUniqueName;
 
 String lastLog;
 unsigned long lastLogTime;
 
 /* CONSTANTS */
-#define USE_SENSORS
+//#define USE_SENSORS
 #define USE_AUDIO
-#define USE_BLE_PROXIMITY
+//#define USE_BLE_PROXIMITY
 #define USE_LIGHTS
 #define USE_ORIENTATION
-//#define USE_WIFI
+#define USE_WIFI
 
-#define RSSI_UPPER_LIMIT -60
-#define RSSI_LOWER_LIMIT -65
+#define CLOSEST_DEVICE_UPPER_LIMIT 1500
+#define CLOSEST_DEVICE_LOWER_LIMIT 1800
 
 enum Orientation { left, right, front, back, up, down, none };
 Orientation currentOrientation = up;
@@ -37,12 +37,13 @@ int currentVolume = 0;
 int targetVolume = 0;
 
 // determination values
-boolean sitOn = false;
+boolean sitOn = true;
 boolean pickedUp = false;
 boolean devicesNearby = false;
 boolean forceState = false;
 int numberOfDevicesNearby = 0;
-int closestDevice = -100;
+int closestDevice = 8000;
+#define MAX_VOLUME 20
 
 /* SETUP */
 void setup() {
@@ -87,15 +88,15 @@ void determineStateAndVolume() {
       targetVolume = 0;
 
       if (!forceState) {
-        if (sitOn) {
-          currentState = siton;
-        }
+//        if (sitOn) {
+//          currentState = siton;
+//        }
   
-        if (pickedUp) {
-          currentState = moving;
-        }
+//        if (pickedUp) {
+//          currentState = moving;
+//        }
         
-        if (closestDevice > RSSI_UPPER_LIMIT ) {
+        if (closestDevice < CLOSEST_DEVICE_UPPER_LIMIT ) {
           currentState = error;
         }
       }
@@ -103,21 +104,25 @@ void determineStateAndVolume() {
     
     // picked up
     case moving:
-      targetVolume = 31;
+      targetVolume = MAX_VOLUME;
       
       if (!forceState) {
-        if (!pickedUp) {
-          currentState = dorment;
-          currentVolume = 0;
+//        if (!pickedUp) {
+//          currentState = dorment;
+//          currentVolume = 0;
+//        }
+
+        if (closestDevice < CLOSEST_DEVICE_UPPER_LIMIT ) {
+          currentState = error;
         }
       }
     break;
 
     case error:
-      targetVolume = 31;
+      targetVolume = MAX_VOLUME;
       
       if (!forceState) {
-        if (closestDevice < RSSI_LOWER_LIMIT ) {
+        if (closestDevice > CLOSEST_DEVICE_LOWER_LIMIT ) {
           currentState = dorment;
         }
       }
@@ -125,18 +130,18 @@ void determineStateAndVolume() {
     
     // sit on
     case siton:
-      targetVolume = 31;
+      targetVolume = MAX_VOLUME;
       
       if (!forceState) {
-        if (!sitOn) {
-          currentState = dorment;
-        }
-  
-        if (pickedUp) {
-          currentState = moving;
-        }
+//        if (!sitOn) {
+//          currentState = dorment;
+//        }
+//  
+//        if (pickedUp) {
+//          currentState = moving;
+//        }
         
-        if (closestDevice > RSSI_UPPER_LIMIT ) {
+        if (closestDevice < CLOSEST_DEVICE_UPPER_LIMIT ) {
           currentState = error;
         }
       }
@@ -180,7 +185,7 @@ void loop() {
 
   // output  
   #ifdef USE_LIGHTS
-  loopAnimations();
+  loopAnimations(devicesNearby, currentOrientation, currentState);
   setLEDs(devicesNearby, currentOrientation, currentState);
   #endif
   
