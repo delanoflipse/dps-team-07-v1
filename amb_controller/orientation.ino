@@ -25,7 +25,7 @@ void determineOrientation() {
   float x, y, z, acc;
   int moving = 1;
 
-  if (IMU.accelerationAvailable()) {
+  if (!forceOrientation && IMU.accelerationAvailable()) {
     IMU.readAcceleration(x, y, z);
     acc = x * x + y * y + z * z;
     boolean smallX = abs(x) < ORIENTATION_DRIFT_MARGIN;

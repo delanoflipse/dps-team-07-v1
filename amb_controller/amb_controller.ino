@@ -15,42 +15,48 @@ String deviceName = deviceBaseName + deviceUniqueName;
 String lastLog;
 unsigned long lastLogTime;
 
+unsigned long now;
+
 /* CONSTANTS */
 //#define USE_SENSORS
 #define USE_AUDIO
-//#define USE_BLE_PROXIMITY
 #define USE_LIGHTS
 #define USE_ORIENTATION
-//#define USE_WIFI
+#define USE_WIFI
 
-#define CLOSEST_DEVICE_UPPER_LIMIT 1500
-#define CLOSEST_DEVICE_LOWER_LIMIT 1800
+#define CLOSEST_DEVICE_ERROR_MIN_DISTANCE 1400
+#define CLOSEST_DEVICE_GROUP_MIN_DISTANCE 3000
+#define ALARM_REPLAYS 4
 
+bool forceOrientation = false;
 enum Orientation { left, right, front, back, up, down, none };
 Orientation currentOrientation = up;
-enum MachineState { error, dorment, moving, siton };
-MachineState currentState = siton;
+Orientation closestOrientation = up;
+
+enum Proximity { close, group, alone };
+Proximity currentProximity = alone;
+enum MachineState { error, dorment, quiet, active };
+MachineState currentState = active;
+MachineState lastState = currentState;
 
 /* VARIABLES */
 int currentVolume = 0;
 int targetVolume = 0;
+int maxVolume = 12;
+int minVolume = 8;
+int tapValue = 0;
 
 // determination values
-boolean sitOn = true;
-boolean pickedUp = false;
-boolean devicesNearby = false;
-boolean forceState = false;
-int numberOfDevicesNearby = 0;
 int closestDevice = 8000;
+unsigned long lastStateChange;
 
 /* SETUP */
 void setup() {
   // listen on serial connection for messages from the PC
   Serial.begin(9600);
-
-  #ifdef USE_BLE_PROXIMITY
-  setupBluetooth();
-  #endif
+  now = millis();
+  lastLogTime = now;
+  lastStateChange = now;
   
   #ifdef USE_WIFI
   setupWiFi();
@@ -69,77 +75,55 @@ void setup() {
   #endif
   
   #ifdef USE_SENSORS
-//  setupPickup();
-  setupSitDetector();
+  setupTap();
   #endif
 
-  lastLogTime = millis();
   // log setup data
   Serial.println("Log: Board setup");
 }
 
 void determineStateAndVolume() {
 
+  if (closestDevice < CLOSEST_DEVICE_ERROR_MIN_DISTANCE) {
+    currentProximity = close;
+  } else if (closestDevice < CLOSEST_DEVICE_GROUP_MIN_DISTANCE) {
+    currentProximity = group;
+  } else {
+    currentProximity = alone;
+  }
+
   // determine next state
   switch (currentState) {
     case dorment:
-      if (!forceState) {
-//        if (sitOn) {
-//          currentState = siton;
-//        }
-  
-//        if (pickedUp) {
-//          currentState = moving;
-//        }
-        
-        if (closestDevice < CLOSEST_DEVICE_UPPER_LIMIT ) {
-          currentState = error;
-        }
-      }
-    break;
-    
-    // picked up
-    case moving:      
-      if (!forceState) {
-//        if (!pickedUp) {
-//          currentState = dorment;
-//          currentVolume = 0;
-//        }
-
-        if (closestDevice < CLOSEST_DEVICE_UPPER_LIMIT ) {
-          currentState = error;
-        }
+      if (currentProximity == close) {
+        currentState = error;
       }
     break;
 
-    case error:      
-      if (!forceState) {
-        if (closestDevice > CLOSEST_DEVICE_LOWER_LIMIT ) {
-          currentState = dorment;
-          currentVolume = 0;
-        }
+    case error:
+      if (currentProximity != close) {
+        currentState = active;
+      }
+    break;
+
+    
+    case quiet:
+      if (currentProximity == close) {
+        currentState = error;
+      }
+      if (currentProximity == alone) {
+        currentState = active;
       }
     break;
     
-    // sit on
-    case siton:      
-      if (!forceState) {
-//        if (!sitOn) {
-//          currentState = dorment;
-//        }
-//  
-//        if (pickedUp) {
-//          currentState = moving;
-//        }
-        
-        if (closestDevice < CLOSEST_DEVICE_UPPER_LIMIT ) {
-          currentState = error;
-        }
+    case active:
+      if (currentProximity == close) {
+        currentState = error;
       }
     break;
     
     default:
-    currentState = currentState;
+      currentState = currentState;
     break;
   }
 }
@@ -147,19 +131,15 @@ void determineStateAndVolume() {
 
 /* main control loop */
 void loop() {
-  // input
-  #ifdef USE_BLE_PROXIMITY
-  // get nearby AMB's
-  getNearbyDevices();
-  #endif
-  
+  now = millis();
+
+  // input  
   #ifdef USE_WIFI
   loopWiFi();
   #endif
   
   #ifdef USE_SENSORS
-//  determinePickedUp();
-  determineSitOn();
+  determineTap();
   #endif
   
   #ifdef USE_ORIENTATION
@@ -168,36 +148,39 @@ void loop() {
 
   // determine colors, state and volume based on sensor values
   determineStateAndVolume();
+  
 
   // output  
   #ifdef USE_LIGHTS
-  loopAnimations(devicesNearby, currentOrientation, currentState);
-  setLEDs(devicesNearby, currentOrientation, currentState);
+  setLEDs(currentOrientation, currentProximity, currentState, lastState);
   #endif
   
   #ifdef USE_AUDIO
-  setAudio(devicesNearby, currentOrientation, currentState);
+  setAudio(currentOrientation, currentProximity, currentState, lastState);
   #endif
 
-  unsigned long timing = millis();
   String logStr = deviceName
-    + '\t' + numberOfDevicesNearby
     + '\t' + closestDevice
     + '\t' + stateToString(currentState)
     + '\t' + orientationToString(currentOrientation)
-    + '\t' + (int) forceState
-    + '\t' + pickedUp;
+    + '\t' + proximityToString(currentProximity)
+    + '\t' + (int) forceOrientation;
       
-  if (lastLog != logStr || timing > lastLogTime + 1000) {
+  if (lastLog != logStr || now > lastLogTime + 1000) {
     lastLog = logStr;
-    lastLogTime = timing;
+    lastLogTime = now;
     
     // LOG EVENTS
     #ifdef USE_WIFI
     logWiFi(logStr);
     #else
-    Serial.println(logStr);
+//    Serial.println(logStr);
     #endif
   }
 
+  if (lastState != currentState) {
+      lastStateChange = now;
+  }
+
+  lastState = currentState;
 }

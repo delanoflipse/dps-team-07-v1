@@ -57,12 +57,35 @@ String stateToString(MachineState state) {
   switch (state) {
     case dorment:
     return "dorment";
-    case moving:
-    return "moving";
     case error:
     return "error";
-    case siton:
-    return "sit_on";
+    case active:
+    return "active";
+    case quiet:
+    return "quiet";
+    default:
+    return "unkown";
+  } 
+}
+
+String HSLtoString(struct HSL hsl) {
+//  int h = (int) hsl.hue * 360;
+//  int s = (int) hsl.saturation * 100;
+//  int l = (int) hsl.lightness * 100;
+  float h = hsl.hue;
+  float s = hsl.saturation;
+  float l = hsl.lightness;
+  return String(h) + "h " + String(s) + "s " + String(l);
+}
+
+String proximityToString(Proximity proximity) {
+  switch (proximity) {
+    case close:
+    return "too_close";
+    case group:
+    return "in_group";
+    case alone:
+    return "alone";
     default:
     return "unkown";
   } 

@@ -12,14 +12,13 @@ struct AudioCollection {
   char prefix[2];
 };
 
-#define MAX_VOLUME 6
 #define ALARM_AUDIO "AL01.mp3"
 
-struct AudioCollection forestAudios = { 2, -1, { 'F', 'S' } };
-struct AudioCollection zenAudios = { 1, -1, { 'Z', 'N' } };
-struct AudioCollection fireAudios = { 1, -1, { 'F', 'R' } };
-struct AudioCollection jazzAudios = { 2, -1, { 'J', 'Z' } };
-struct AudioCollection rainAudios = { 3, -1, { 'R', 'N' } };
+struct AudioCollection forestAudios = { 1, -1, { 'F', 'S' } };
+struct AudioCollection zenAudios = { 2, -1, { 'Z', 'N' } };
+struct AudioCollection fireAudios = { 2, -1, { 'F', 'R' } };
+struct AudioCollection jazzAudios = { 5, -1, { 'J', 'Z' } };
+struct AudioCollection rainAudios = { 2, -1, { 'R', 'N' } };
 
 struct AudioCollection * lastCollection = NULL;
 
@@ -61,7 +60,6 @@ void setVolume(int vol) {
   
   Mp3Player.volume(vol);
   lastVolume = vol;
-  Serial.println("updated volume");
 }
 
 String setNewAudio(struct AudioCollection * collection) {
@@ -89,7 +87,7 @@ String setNewAudio(struct AudioCollection * collection) {
   return songName;
 }
 
-void setAudio(int active, Orientation orientation, MachineState state) {
+void setAudio(Orientation orientation, Proximity proximity, MachineState state, MachineState lastState) {
   // move volume to the target volume
 //  if (targetVolume != currentVolume) {
 //    currentVolume += targetVolume > currentVolume ? 1 : -1;
@@ -97,7 +95,6 @@ void setAudio(int active, Orientation orientation, MachineState state) {
   setVolume(targetVolume);
 
   // warn: does this influence performance?
-  unsigned long now = millis();
   if (lastCheck + 1000 > now) {
     playStatus = Mp3Player.getStatus();
     lastCheck = now;
@@ -106,19 +103,19 @@ void setAudio(int active, Orientation orientation, MachineState state) {
   // determine audio
   switch(orientation) {
     case up:
+    newAudio = setNewAudio(&forestAudios);
+    lastCollection = &forestAudios;
+    break;
+    
+    case down:
     // none
     newAudio = "none";
     lastCollection = NULL;
     break;
     
-    case down:
+    case right:
     newAudio = setNewAudio(&rainAudios);
     lastCollection = &rainAudios;
-    break;
-    
-    case right:
-    newAudio = setNewAudio(&forestAudios);
-    lastCollection = &forestAudios;
     break;
     
     case left:
@@ -127,37 +124,40 @@ void setAudio(int active, Orientation orientation, MachineState state) {
     break;
     
     case front:
-    newAudio = setNewAudio(&zenAudios);
-    lastCollection = &zenAudios;
+    newAudio = setNewAudio(&jazzAudios);
+    lastCollection = &jazzAudios;
     break;
     
     case back:
-    newAudio = setNewAudio(&jazzAudios);
-    lastCollection = &jazzAudios;
+    newAudio = setNewAudio(&zenAudios);
+    lastCollection = &zenAudios;
     break;
 
     default:
     break;
   }
   
+  int scaledValue = map(closestDevice, CLOSEST_DEVICE_ERROR_MIN_DISTANCE, CLOSEST_DEVICE_GROUP_MIN_DISTANCE, minVolume, maxVolume);
   switch(state) {
-    case siton:
-      targetVolume = MAX_VOLUME;
+    case active:
+      targetVolume = constrain(scaledValue, 0, 30);
     break;
 
     case dorment:
+    case quiet:
       targetVolume = 0;
     break;
 
     case error:
-      playMode = SINGLE_CYCLE;
-      newAudio = ALARM_AUDIO;
-      targetVolume = MAX_VOLUME;
-      currentVolume = MAX_VOLUME;
-    break;
-    
-    case moving:
-      targetVolume = MAX_VOLUME;
+      if (lastStateChange + ALARM_REPLAYS * 2400 > now) {
+        playMode = SINGLE_CYCLE;
+        newAudio = ALARM_AUDIO;
+        targetVolume = maxVolume;
+        currentVolume = maxVolume;
+      } else {
+        targetVolume = minVolume;
+        currentVolume = minVolume;
+      }
     break;
     
     default:
